@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="utf-8">
+    <title>Pwned Checker</title>
+    <link rel="stylesheet" href="{{ url_for('static', path='styles.css') }}">
+</head>
+<body>
+    <header>
+        <h1>Pwned Checker</h1>
+    </header>
+    <nav>
+        <ul>
+            <li><a href="#csv-upload">CSV-Upload</a></li>
+            <li><a href="#password-check">Passwort prüfen</a></li>
+            <li><a href="#cache-management">Lokalen Cache verwalten</a></li>
+        </ul>
+    </nav>
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+    <footer>
+        <p>Passwörter bleiben lokal. Beim Aktualisieren des Hash-Caches werden nur SHA-1-Präfixe an den Pwned-Passwords-Dienst gesendet.</p>
+    </footer>
+</body>
+</html>

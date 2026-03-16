@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section id="csv-upload">
+    <h2>CSV-Upload und Bulk-Prüfung</h2>
+    <p>Laden Sie eine CSV-Datei aus Ihrem Passwort-Manager hoch. Fehlende Hash-Bereiche werden in den lokalen Cache geladen und danach offline ausgewertet. Passwörter werden niemals im Klartext übertragen.</p>
+    <form action="/upload_csv" method="post" enctype="multipart/form-data">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="file" name="file" accept=".csv" required>
+        <button type="submit">CSV prüfen</button>
+    </form>
+    {% if csv_result %}
+        {% if csv_result.error %}
+            <p class="error">{{ csv_result.error }}</p>
+        {% elif csv_result.entries %}
+            <h3>Ergebnisse</h3>
+            <p>{{ csv_result.downloaded_prefixes }} neue Hash-Bereiche geladen, insgesamt {{ csv_result.cached_prefixes }} lokal gespeichert.</p>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Website</th>
+                        <th>Benutzername</th>
+                        <th>Pwned Count</th>
+                        <th>Wiederverwendung</th>
+                        <th>Schwaches Passwort</th>
+                    </tr>
+                </thead>
+                <tbody>
+                {% for item in csv_result.entries %}
+                    <tr>
+                        <td>{{ item.website }}</td>
+                        <td>{{ item.username }}</td>
+                        <td>{{ item.pwned_count }}</td>
+                        <td>{% if item.reused_password %}ja ({{ item.reuse_count }}){% else %}nein{% endif %}</td>
+                        <td>{% if item.weak_password %}ja{% else %}nein{% endif %}</td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+            <p>Hinweis: „Wiederverwendung“ gibt an, wie oft dasselbe Passwort in der Datei vorkommt.</p>
+            <form action="/export_report" method="get">
+                <button type="submit">Report als CSV exportieren</button>
+            </form>
+        {% endif %}
+    {% endif %}
+</section>
+
+<section id="password-check">
+    <h2>Einzelnes Passwort prüfen</h2>
+    <p>Prüfen Sie ein einzelnes Passwort. Es wird lokal gehasht und bei Bedarf wird nur der passende Hash-Bereich für den lokalen Cache geladen.</p>
+    <form action="/check_password" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <input type="password" name="password" placeholder="Passwort" required>
+        <button type="submit">Prüfen</button>
+    </form>
+    {% if password_result %}
+        {% if password_result.error %}
+            <p class="error">{{ password_result.error }}</p>
+        {% else %}
+            <h3>Ergebnis</h3>
+            <ul>
+                <li>Kompromittiert: {% if password_result.pwned_count > 0 %}ja ({{ password_result.pwned_count }} Treffer){% else %}nein{% endif %}</li>
+                <li>Schwaches Passwort: {% if password_result.weak_password %}ja – {{ password_result.weak_reason }}{% else %}nein{% endif %}</li>
+                <li>Cache: {{ password_result.downloaded_prefixes }} neue Hash-Bereiche geladen, insgesamt {{ password_result.cached_prefixes }} lokal gespeichert</li>
+            </ul>
+        {% endif %}
+    {% endif %}
+</section>
+
+<section id="cache-management">
+    <h2>Lokalen Cache verwalten</h2>
+    <p>Der Cache speichert bereits geladene Pwned-Passwords-Hash-Bereiche unter <code>{{ cache_stats.cache_dir }}</code>.</p>
+    <p>Gespeicherte Hash-Bereiche: {{ cache_stats.cached_prefixes }}{% if cache_stats.last_updated %}, zuletzt aktualisiert: {{ cache_stats.last_updated }}{% endif %}</p>
+    <form action="/refresh_cache" method="post">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+        <button type="submit">Lokalen Cache aktualisieren</button>
+    </form>
+    {% if cache_result %}
+        {% if cache_result.error %}
+            <p class="error">{{ cache_result.error }}</p>
+        {% else %}
+            <p>{{ cache_result.message }} {{ cache_result.refreshed_prefixes }} Bereiche neu geladen, insgesamt {{ cache_result.cached_prefixes }} lokal gespeichert.</p>
+        {% endif %}
+    {% endif %}
+</section>
+
+{% endblock %}
